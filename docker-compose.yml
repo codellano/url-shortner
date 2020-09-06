@@ -1,0 +1,63 @@
+version: "3.7"
+
+services:
+  app:
+    build:
+      args:
+        user: paulo
+        uid: 1000
+      context: ./
+      dockerfile: Dockerfile
+    image: urlshortner
+    container_name: urlshortner-app
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./:/var/www
+    environment:
+      - COMPOSER_MEMORY_LIMIT=-1
+    networks:
+      - urlshortner
+
+  db:
+    image: mysql:5.7
+    container_name: urlshortner-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: homestead
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_PASSWORD: secret
+      MYSQL_USER: homestead
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    ports:
+      - 33061:3306
+    volumes:
+      - ./docker-compose/mysql:/docker-entrypoint-initdb.d
+    networks:
+      - urlshortner
+
+  nginx:
+    image: nginx:alpine
+    container_name: urlshortner-nginx
+    restart: always
+    ports:
+      - 3001:80
+    volumes:
+      - ./:/var/www
+      - ./docker-compose/nginx:/etc/nginx/conf.d/
+    networks:
+      - urlshortner
+
+  redis:
+    image: "redis:alpine"
+    container_name: urlshortner-redis
+    restart: unless-stopped
+    ports:
+      - "6399:6379"
+    networks:
+      - urlshortner
+
+networks:
+  urlshortner:
+    driver: bridge
